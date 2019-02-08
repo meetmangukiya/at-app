@@ -187,7 +187,7 @@ _signUpAsync = async () => {
       fontSize: 40,
       height:40,
       marginBottom: 20,
-      color:'#00000',
+      color:'#000000',
       paddingHorizontal:10,
     },
     container: {
@@ -199,7 +199,7 @@ _signUpAsync = async () => {
     loginText: {
       height:40,
       marginBottom: 20,
-      color:'#00000',
+      color:'#000000',
       paddingHorizontal:10,
     },
 
