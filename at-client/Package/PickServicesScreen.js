@@ -97,7 +97,7 @@ export default class PickServicesScreen extends React.Component {
       fontSize: 40,
       height:40,
       marginBottom: 20,
-      color:'#00000',
+      color:'#000000',
       paddingHorizontal:10,
     },
     container: {
@@ -109,7 +109,7 @@ export default class PickServicesScreen extends React.Component {
     loginText: {
       height:40,
       marginBottom: 20,
-      color:'#00000',
+      color:'#000000',
       paddingHorizontal:20,
     },
 
