@@ -20,24 +20,19 @@ export default class ClientScreen extends React.Component {
 
   async componentDidMount(){
 
-    this.socket.emit('requestAllClients', await SecureStore.getItemAsync('usernameToken'));
+    this.socket.emit('requestAllClients', {username:await SecureStore.getItemAsync('usernameToken'),entity:await SecureStore.getItemAsync('entityToken')});
 
     this.socket.on('gottenAllClients', async(data)=>{
 
-    var clientNames = [];
-     for (i = 0; i < data.length; i++) {
-        clientNames.push({"key":data[i]["_id"], "username": data[i]["username"],"businessName": data[i]["businessName"],"selected":false});
-        if(i===data.length-1){
           this.setState({
-            dataSource:clientNames
+            dataSource:data
           });
-        }
-      }
+        });
 
-    });
+        await SecureStore.setItemAsync('configClicked','false');
 
+      };
 
-  }
 
   _goDrawer= async () => {
     this.props.navigation.navigate('Drawer');
@@ -45,9 +40,8 @@ export default class ClientScreen extends React.Component {
   }
 
   _selectClient = async (item) => {
-    await SecureStore.setItemAsync('clientConfigUsername',item.username);
     await SecureStore.setItemAsync('clientSelectedUsername',item.username);
-
+    await SecureStore.setItemAsync('configClicked','true');
     this.props.navigation.navigate('ClientSettings');
 
 
@@ -72,6 +66,7 @@ export default class ClientScreen extends React.Component {
 
 
     render() {
+
       return (
         <View>
         <FlatList

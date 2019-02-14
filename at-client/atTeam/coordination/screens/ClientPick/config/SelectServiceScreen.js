@@ -17,7 +17,7 @@ export default class SelectServiceScreen extends React.Component {
 
   async componentDidMount(){
 
-    this.socket.emit('requestAllServices', await SecureStore.getItemAsync('clientSelectedUsername'));
+    this.socket.emit('requestAllServices', await SecureStore.getItemAsync('clientConfigUsername'));
 
     this.socket.on('gottenAllServices', async(data)=>{
 

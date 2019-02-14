@@ -36,21 +36,27 @@ export default class PickServicesScreen extends React.Component {
 
 
   _signInAsync = async () => {
+    console.log("being called");
 
   this.props.navigation.navigate('ClientApp');
 
   };
 
-  _startFreeTrial = async () => {
+  _startFreeTrial = async (services) => {
 
-    this.socket.emit('startFreeTrial',  {clientUsername:await SecureStore.getItemAsync('usernameToken'),selectedPackage: this.state.selectedPackage});
+    if(services=="custom"){
+      this.props.navigation.navigate('CustomizePackage');
+
+    }
+    else{
+
+    this.socket.emit('startFreeTrial',  {clientUsername:await SecureStore.getItemAsync('usernameToken'),selectedPackage: services});
             this.socket.on('selectPackageMsg', function(data){
               console.log(data);
               alert(data);
 
-
             });
-
+          }
       }
 
 
@@ -58,30 +64,64 @@ export default class PickServicesScreen extends React.Component {
       return (
 
         <View>
-                  <Picker
-                    mode="dropdown"
-                    selectedValue={this.state.selectedPackage}
-                    onValueChange={ (value) => ( this.setState({selectedPackage : value}) )}>
 
-                    <Picker.Item label = "500" value = "500" />
-                    <Picker.Item label = "750" value = "750" />
-                    <Picker.Item label = "1000" value = "1000" />
-                  </Picker>
-                  <View>
+        <View>
+        <TouchableOpacity
+        style={styles.buttonContainer}
+        onPress={()=>this._startFreeTrial(500)}
+        >
 
-                <TouchableOpacity
-                style={styles.buttonContainer}
-                onPress= {this._startFreeTrial}>
-                  <Text style={styles.buttonText}> Start Free Trial  </Text>
-                  </TouchableOpacity>
+          <Text style={styles.buttonText}> $500  </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View>
+
+          <TouchableOpacity
+          style={styles.buttonContainer}
+          onPress={()=>this._startFreeTrial(750)}
+          >
+
+            <Text style={styles.buttonText}> $750  </Text>
+            </TouchableOpacity>
+            </View>
+
+            <View>
+
+            <TouchableOpacity
+            style={styles.buttonContainer}
+            onPress={()=>this._startFreeTrial(1000)}
+            >
+
+              <Text style={styles.buttonText}> $1000  </Text>
+              </TouchableOpacity>
+              </View>
+
+              <View>
+
+              <TouchableOpacity
+              style={styles.buttonContainer}
+              onPress={()=>this._startFreeTrial("custom")}
+              >
+
+                <Text style={styles.buttonText}> Customize  </Text>
+                </TouchableOpacity>
+                </View>
+
+                <View>
+
+
                   </View>
 
+                  <View>
 
                 <TouchableOpacity
                 style={styles.buttonContainer}
                 onPress= {this._signInAsync}>
                   <Text style={styles.buttonText}> Log In  </Text>
                   </TouchableOpacity>
+                  </View>
+
             </View>
 
 

@@ -14,6 +14,15 @@ mongoose.connect('mongodb://localhost/test');
 
  var Schema = mongoose.Schema;
 
+
+
+ var ClientStorageSchema = new Schema({
+   key:String,
+   businessName:String,
+   username:String,
+
+ });
+
  var ContentCreatorSchema = new Schema({
    username:String,
    firstName: String,
@@ -23,7 +32,15 @@ mongoose.connect('mongodb://localhost/test');
      required: true},
    clientUsernames: [String],
    coreUsername: String,
+   clients: [ClientStorageSchema],
+
  });
+
+
+ ContentCreatorSchema.methods.getClients =function() {
+   return this.clients;
+
+ }
 
 
  var ContentCreatorModel = mongoose.model('ContentCreator', ContentCreatorSchema);

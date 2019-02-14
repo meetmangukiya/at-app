@@ -117,7 +117,7 @@ await this.socket.on('loginStatus', async(data)=>{
 
         <KeyboardAvoidingView behavior="padding" style={styles.container}>
 
-        <Text style={styles.Welcome}> Welcome to @</Text>
+        <Text style={styles.Welcome}> Welcome to this @</Text>
 
         <Text style={styles.loginText}> First just go ahead and login</Text>
 

@@ -20,32 +20,30 @@ export default class ClientScreen extends React.Component {
 
   async componentDidMount(){
 
-    this.socket.emit('requestAllClients', await SecureStore.getItemAsync('usernameToken'));
+    SecureStore.setItemAsync('configClicked',false);
+
+    this.socket.emit('requestAllClients', {username:await SecureStore.getItemAsync('usernameToken'),entity:await SecureStore.getItemAsync('entityToken')});
 
     this.socket.on('gottenAllClients', async(data)=>{
 
-    var clientNames = [];
-     for (i = 0; i < data.length; i++) {
-        clientNames.push({"key":data[i]["_id"], "username": data[i]["username"],"businessName": data[i]["businessName"],"selected":false});
-        if(i===data.length-1){
           this.setState({
-            dataSource:clientNames
+            dataSource:data
           });
-        }
-      }
+        });
+      };
 
-    });
-
-
-  }
 
   _goDrawer= async () => {
     this.props.navigation.navigate('Drawer');
 
   }
 
-  _selectClient = async (clientUsername) => {
-    await SecureStore.setItemAsync('clientConfigUsername',clientUsername);
+  _selectClient = async (item) => {
+
+    await SecureStore.setItemAsync('configClicked',true);
+
+    await SecureStore.setItemAsync('clientSelectedUsername',item.username);
+
     this.props.navigation.navigate('ClientSettings');
 
 
@@ -91,7 +89,7 @@ export default class ClientScreen extends React.Component {
                   </View>
 
                   <View>
-                  <Button title="Configure" onPress={()=> this._selectClient(item.username)} />
+                  <Button title="Configure" onPress={()=> this._selectClient(item)} />
 
                 </View>
                 <View>
@@ -110,7 +108,7 @@ export default class ClientScreen extends React.Component {
         }
 
       />
-      
+
         <View>
         <Button title="Go do some great work!" onPress={this._goDrawer} />
         </View>

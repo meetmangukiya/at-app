@@ -18,6 +18,14 @@ mongoose.connect('mongodb://localhost/test');
 
  var Schema = mongoose.Schema;
 
+
+ var ClientStorageSchema = new Schema({
+   key:String,
+   businessName:String,
+   username:String,
+
+ });
+
  var DesignerSchema = new Schema({
    username:String,
    firstName: String,
@@ -25,6 +33,8 @@ mongoose.connect('mongodb://localhost/test');
    businessName:{
      type:String,
      required: true},
+     clients: [ClientStorageSchema],
+
   // clients: [ClientSchema],
   // contentCreator:[ContentCreatorSchema],
   // core:CoreSchema,

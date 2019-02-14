@@ -12,11 +12,21 @@ var Core= require('./Core.js');
 var CoreSchema= Core.CoreSchema;
 
 
+
 mongoose.connect('mongodb://localhost/test');
 //mongoose.connect("mongodb://armand_at:#LORDarmand2019@atsocial-shard-00-00-exfpm.gcp.mongodb.net:27017,atsocial-shard-00-01-exfpm.gcp.mongodb.net:27017,atsocial-shard-00-02-exfpm.gcp.mongodb.net:27017/test?ssl=true&replicaSet=AtSocial-shard-0&authSource=admin&retryWrites=true/", { useNewUrlParser: true });
 
 
  var Schema = mongoose.Schema;
+
+
+
+
+ var ClientStorageSchema = new Schema({
+   key:String,
+   businessName:String,
+   username:String,
+ });
 
  var AdSchema = new Schema({
    username:String,
@@ -25,6 +35,8 @@ mongoose.connect('mongodb://localhost/test');
    businessName:{
      type:String,
      required: true},
+     clients: [ClientStorageSchema],
+
   // clients: [ClientSchema],
   // contentCreator:[ContentCreatorSchema],
   // core:CoreSchema,

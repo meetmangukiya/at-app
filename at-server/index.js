@@ -63,7 +63,6 @@ authentication.on('connection', function(socket){
         socket.on('signUp', function(data){
 
           User.findOne({ username: data.screenUserName }, function(err, user) {
-            console.log(user);
           if (user!=null){
             var usernameStatus={status:"username already exists"}
            socket.emit('loginStatus', usernameStatus); // emit an event to the socket
@@ -201,24 +200,62 @@ authentication.on('connection', function(socket){
 
     entities.on('connection', function(socket){
         socket.on('requestAllClients', function(data){
+          var entity=data.entity;
+          var username=data.username;
 
-          GodModel.findOne({ username: data }, function(err, user) {
-            var clients;
-            if (err){
-              //
-            }
-            else{
+         if(entity==="ContentCreator"){
+            var model=ContentCreatorModel;
+          }
+          else if(entity==="Core"){
+            var model=CoreModel;
+          }
+          /*
+          else if(entity==="Coordination"){
+            var model=CoordinationModel;
+
+          }
+
+          else if(entity==="Client"){
+            var model=ClientModel;
+          }
+
+          else if(entity==="Ad"){
+            var model=AdModel;
+          }
+          else if(entity==="God"){
+            var model=GodModel;
+          }*/
+
+
+          if(model===ContentCreatorModel || model===CoreModel){
+            model.findOne({username:username}, function(err, user) {
+              var clients=user.getClients();
+
+
+
+              socket.emit('gottenAllClients', clients); // emit an event to the socket
+
+            });
+          }
+
+
+          else{
+
               ClientModel.find({}, function(err, users) {
-                socket.emit('gottenAllClients', users); // emit an event to the socket
+
+
+                var clients=[];
+                for(var i=0; i<users.length;i++){
+                    var clientObj={key:users[i]["username"], businessName:users[i]["businessName"], username:users[i]["username"]};
+                    clients.push(clientObj);
+                }
+                socket.emit('gottenAllClients', clients); // emit an event to the socket
+
               })
             }
+
+
           });
-
-          //if creator
-          //if core ..
-
-
-        });
 
         socket.on('requestClient', function(data){
 
@@ -255,94 +292,225 @@ authentication.on('connection', function(socket){
 
 
 
-              socket.on('requestClient', function(data){
-
-                    ClientModel.findOne({username:data}, function(err, user) {
-                      if (err){
-                        console.log(err);
-                      }
-                      else{
-
-                      socket.emit('gottenClient', user); // emit an event to the socket
-                      }
-                    })
-                  });
-
-                  socket.on('assignContentCreator', function(data){
+                  socket.on('assignContentCreator', async function(data){
                         var msg='';
-                        ClientModel.findOne({username:data.clientUsername}, function(err, user) {
+                        var stop;
+                        var clientObj;
+                        var contentCreatorOldUsername;
+
+                        await  ClientModel.findOne({username:data.clientUsername}, function(err, user) {
                           if (err || user==undefined){
                             msg+="error";
                           }
                           else{
 
-                          user.contentCreatorUsername=data.contentCreatorUsername;
+                            if(user.contentCreatorUsername==undefined||user.contentCreatorUsername==null||user.contentCreatorUsername==''){
+                              user.contentCreatorUsername=data.contentCreatorUsername;
+                               contentCreatorOldUsername="none";
+                            }
+                            else if(user.contentCreatorUsername.valueOf()==data.contentCreatorUsername.valueOf()){
+                              socket.emit('ContentCreatorAssignedMsg', 'This content creator is already assigned to this client'); // emit an event to the socket
+                               stop='true';
+                            }
+                            else{
+                               contentCreatorOldUsername=user.contentCreatorUsername;
+                              user.contentCreatorUsername=data.contentCreatorUsername;
+                            }
+
+                            if(stop!='true'){
+
                             msg+=user.contentCreatorUsername+" assigned to "+user.businessName;
-                            user.popAndAdd(user.motherQueue,"Core","Assign A Content Creator");
+                            if(data.configClicked!='true'){
+                              user.popAndAdd(user.signUpQueue,"Core","Assign A Content Creator");
+
+                            }
+
+
+                          clientObj={key:user.username,username:user.username,businessName:user.businessName};
                             user.save();
+                          }
 
                           }
                         })
+
+                        if(stop!='true'){
+
                         ContentCreatorModel.findOne({username:data.contentCreatorUsername}, function(err, user) {
                           if (err || user== undefined){
                             msg+="error";
                           }
                           else{
+
+                            var clients=user.clients;
+                            var clientArr=[];
+                            console.log("clients:"+clients);
+
+                            if (clients==undefined || clients==""){
+                              clientArr.push(clientObj);
+                              user.clients=clientArr;
+                              console.log("user.clients:"+user.clients);
+                            }
+                            else{
+                              //on old client
+                              clients.push(clientObj);
+                            }
                           user.clientUsername=data.clientUsername;
-                          msg+= " & vice versa"
-
-
+                          msg+= "assigned clients:"+user.clients;
                           }
+
+                          user.save();
 
                           socket.emit('ContentCreatorAssignedMsg', msg); // emit an event to the socket
 
                         })
 
+                      if(contentCreatorOldUsername!='none'){
+                        console.log("contentCreatorOldUsername: "+contentCreatorOldUsername);
+                        ContentCreatorModel.findOne({username:contentCreatorOldUsername}, function(err, user) {
+                          if (err || user== undefined){
+                            msg+="error";
+                          }
+                          else{
+
+                            var clients=user.clients;
+                            console.log("clients:"+clients);
+                              //on old client
+
+                              var foundClient = clients.find(function(element) {
+                                if(element.username.valueOf()==data.clientUsername.valueOf()){
+                                return element;
+                                }
+                              });
+
+                              var index = clients.indexOf(foundClient);
+                              clients.splice(index, 1);
+                              user.clients=clients;
+
+                            }
+                          user.clientUsername='';
+
+                          user.save();
+
+
+                        })
+                      }
+                    }
+
+
                       });
 
-                      socket.on('assignCore', function(data){
-
+                      socket.on('assignCore', async function(data){
+                        var stop;
                             var msg='';
-                            ClientModel.findOne({username:data.clientUsername}, function(err, user) {
-                              console.log(user);
-
+                            var clientObj;
+                            var coreOldUsername;
+                            await  ClientModel.findOne({username:data.clientUsername}, function(err, user) {
                               if (err || user==undefined){
                                 msg+="error";
                               }
                               else{
-                                console.log("try");
 
-                              console.log(user);
+                                if(user.coreUsername==undefined||user.coreUsername==null||user.coreUsername==''){
+                                  user.coreUsername=data.coreUsername;
+                                   coreOldUsername="none";
+                                }
+                                else if(user.coreUsername.valueOf()==data.coreUsername.valueOf()){
+                                  socket.emit('CoreAssignedMsg', 'This core is already assigned to this client'); // emit an event to the socket
 
-                              user.coreUsername=data.coreUsername;
+                                   stop='true';
+                                }
+                                else{
+                                   coreOldUsername=user.coreUsername;
+                                  user.coreUsername=data.coreUsername;
+                                }
+
+                              if(stop!='true'){
+
+                                console.log(stop);
                                 msg+=user.coreUsername+" assigned to "+user.businessName;
+                                if(data.configClicked!='true'){
+                                  user.popAndAdd(user.signUpQueue,"God","Assign A Core");
 
-                                user.popAndAdd(user.motherQueue,"God","Assign A Core");
+                                }
+
+
+                              clientObj={key:user.username,username:user.username,businessName:user.businessName};
+                                user.save();
+
+                                }
 
                               }
-                              user.save();
-
                             })
+
+                            if(stop!='true'){
+                              console.log("stop again:"+stop);
+
+
                             CoreModel.findOne({username:data.coreUsername}, function(err, user) {
                               if (err || user== undefined){
                                 msg+="error";
                               }
                               else{
-                              user.clientUsername=data.clientUsername;
-                              msg+= " & vice versa"
 
+                                var clients=user.clients;
+                                var clientArr=[];
+                                console.log("clients:"+clients);
+
+                                if (clients==undefined || clients==""){
+                                  clientArr.push(clientObj);
+                                  user.clients=clientArr;
+                                  console.log("user.clients:"+user.clients);
+                                }
+                                else{
+                                  //on old client
+                                  clients.push(clientObj);
+                                }
+                              user.clientUsername=data.clientUsername;
+                              msg+= "assigned clients:"+user.clients;
                               }
+
+                              user.save();
 
                               socket.emit('CoreAssignedMsg', msg); // emit an event to the socket
 
                             })
 
+                          if(coreOldUsername!='none'){
+                            CoreModel.findOne({username:coreOldUsername}, function(err, user) {
+                              if (err || user== undefined){
+                                msg+="error";
+                              }
+                              else{
+
+                                var clients=user.clients;
+                                console.log("clients:"+clients);
+                                  //on old client
+
+                                  var foundClient = clients.find(function(element) {
+                                    if(element.username.valueOf()==data.clientUsername.valueOf()){
+                                    return element;
+                                    }
+                                  });
+
+                                  var index = clients.indexOf(foundClient);
+                                  clients.splice(index, 1);
+                                  user.clients=clients;
+
+                                }
+                              user.clientUsername='';
+
+                              user.save();
+
+
+                            })
+                          }
+
+                        }
+
+
                           });
 
-
-                });
-
-
+});
 
     var calendar = io.of('/calendar');
 
@@ -393,13 +561,93 @@ authentication.on('connection', function(socket){
                 socket.emit('gottenAllServices', user.services); // emit an event to the socket
               })
             });
+
+            socket.on('requestRemoval',  function(data){
+                  ClientModel.findOne({username:data.clientUsername}, async function(err, user) {
+                    await user.removeService(data.service);
+                    user.save();
+                  })
+                });
+
+
+      socket.on('requestAllAddServices', function(data){
+              ClientModel.findOne({username:data}, function(err, user) {
+
+                var dataSource=[{key:"2HourPhotography",value:"Two Hours of Photography"},{key:"4HourPhotography",value:"Four Hours of Photography"},
+                      {key:"Influencers", value:"Influencer Management"},{key:"Ads", value:"Ad Management"},
+                      {key:"15Posts", value:"Fifteen Posts"},{key:"30Posts", value:"Thirty Posts"},{key:"Surveillance", value:"Surveillance"},
+                      {key:"EngagementCampaign", value:"Engagement Campaign"}]
+
+                var RemoveServices=[];
+
+
+
+                      for(var j=0;j<dataSource.length;j++){
+
+                          for(var i=0;i<user.services.length;i++){
+
+                            if(user.services[i].valueOf()==dataSource[j]["key"].valueOf()){
+                              RemoveServices.push(dataSource[j]["key"]);
+                            }
+                            else{
+                              if(user.services[i].valueOf()=="4HourPhotography" && dataSource[j]["key"].valueOf()=="2HourPhotography"){
+                                RemoveServices.push(dataSource[j]["key"]);
+                              }
+                              else if(user.services[i].valueOf()=="2HourPhotography" && dataSource[j]["key"].valueOf()=="4HourPhotography"){
+                                RemoveServices.push(dataSource[j]["key"]);
+                              }
+                              else if(user.services[i].valueOf()=="15Posts" && dataSource[j]["key"].valueOf()=="30Posts"){
+                                RemoveServices.push(dataSource[j]["key"]);
+                              }
+                              else if(user.services[i].valueOf()=="30Posts" && dataSource[j]["key"].valueOf()=="15Posts"){
+                                RemoveServices.push(dataSource[j]["key"]);
+                              }
+
+                            }
+
+                          }
+                        }
+
+                        for(var p=0;p<RemoveServices.length;p++){
+
+                          var found = dataSource.find(function(element) {
+                            if(element.key.valueOf()==RemoveServices[p].valueOf()){
+                            return element;
+                            }
+                          });
+
+                          var index = dataSource.indexOf(found);
+                          dataSource.splice(index, 1);
+
+                        }
+
+
+
+
+                  socket.emit('gottenAllAddServices', dataSource); // emit an event to the socket
+                       })
+                     });
+
+            socket.on('requestAdd', function(data){
+              console.log("data:"+data)
+
+                  ClientModel.findOne({username:data.clientUsername}, async function(err, user) {
+                    console.log("service:"+data.service)
+
+                    await user.addService(data.service);
+                    user.save();
+                      })
+                    });
+
+
+
+
           });
 
 var package = io.of('/package');
 
   package.on('connection', function(socket){
     socket.on('startFreeTrial',  function(data){
-      console.log(data);
       var msg='';
 
 
@@ -408,7 +656,6 @@ var package = io.of('/package');
           console.log("no model error")
         }
         else{
-
 
       await user.startFreeTrial(data.selectedPackage);
 
@@ -432,17 +679,19 @@ var package = io.of('/package');
                 });
 
 
-var calendarHome = io.of('/calendarHome');
-calendarHome.on('connection', function(socket){
-  socket.on('getAllCalendarItems', function(data){
+  var calendarHome = io.of('/calendarHome');
+  calendarHome.on('connection', function(socket){
+    socket.on('getAllCalendarItems', function(data){
 
 
       ClientModel.findOne({ username: data.clientUsername}, function(err, user) {
 
         var neededCalendar=user.getCalendarAndToDos(data.entity)["neededCalendar"];
 
+        finalDates =[ ...neededCalendar.keys() ];
+        console.log("From INDEX: "+ finalDates)
 
-        socket.emit('gottenAllCalendarItems', neededCalendar); // emit an event to the socket
+          socket.emit('gottenAllCalendarItems', neededCalendar); // emit an event to the socket
 
         });
     });
@@ -457,7 +706,7 @@ kyc.on('connection', function(socket){
           ClientModel.findOne({username:data.clientUsername}, function(err, user) {
             user.kyc["age"]=data.age;
 
-            user.popAndAdd(user.motherQueue,"Client","KYC");
+            user.popAndAdd(user.signUpQueue,"Client","KYC");
 
             user.save();
 
@@ -473,6 +722,7 @@ var toDos = io.of('/toDos');
 toDos.on('connection', function(socket){
   socket.on('requestToDos', function(data){
     ClientModel.findOne({ username: data.clientUsername }, async function(err, user) {
+
       var newToDosArr=[];
 
       await user.initializeWithDate();
@@ -508,14 +758,7 @@ toDos.on('connection', function(socket){
       socket.on('doneCall', function(data){
 
         ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
-          if(data.entity=="Client"){
-            user.popAndAdd(user.callQueue,"Client","Monthly Call");
-
-          }
-          if(data.entity=="Content Creator"){
-            user.popAndAdd(user.callQueue,"ContentCreator","Monthly Call");
-
-          }
+            user.popAndAdd(user.callQueue,data.entity,"Monthly Call");
 
           user.save();
 
@@ -528,7 +771,6 @@ toDos.on('connection', function(socket){
 
         done.on('connection', function(socket){
           socket.on('done', function(data){
-            console.log(data);
 
             ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
 
@@ -547,7 +789,6 @@ toDos.on('connection', function(socket){
 
                 ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
 
-                  console.log(user);
 
                     user.popAndAdd(user.motherQueue,data.entity,data.msg);
 
@@ -557,7 +798,6 @@ toDos.on('connection', function(socket){
 
 
                     user.save();
-                    console.log(user.strategy);
 
                     });
                   });
@@ -565,7 +805,6 @@ toDos.on('connection', function(socket){
                   socket.on('getStrategy', function(data){
 
                     ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
-                      console.log({image:user.strategy["image"], description:user.strategy["description"]});
                       socket.emit('gottenStrategy', {image:user.strategy["image"], description:user.strategy["description"]}); // emit an event to the socket
 
 
@@ -582,7 +821,6 @@ toDos.on('connection', function(socket){
 
 
                   socket.on('createPost', function(data){
-                    console.log(data);
 
                     ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
 
@@ -609,8 +847,6 @@ toDos.on('connection', function(socket){
                       socket.on('getCalendar', function(data){
 
                         ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
-                          console.log(user);
-                          console.log(user.contentCalendar);
 
                           socket.emit('gottenCalendar', user.contentCalendar["posts"]); // emit an event to the socket
 
@@ -620,6 +856,22 @@ toDos.on('connection', function(socket){
 
                         });
 
+
+
+
+                        var activity = io.of('/activity');
+
+                        activity.on('connection', function(socket){
+                            socket.on('requestAllActivity', function(data){
+
+                              ClientModel.findOne({ username: data }, function(err, user) {
+                                    socket.emit('gottenAllActivity', user.activityArray); // emit an event to the socket
+                                  })
+                                });
+                              });
+
+                              //if creator
+                              //if core ..
 
 
 

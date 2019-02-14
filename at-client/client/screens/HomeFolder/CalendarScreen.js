@@ -54,10 +54,10 @@ export default class CalendarScreen extends React.Component {
           this.socket.emit('getAllCalendarItems', {clientUsername:await SecureStore.getItemAsync('clientSelectedUsername'),entity:await SecureStore.getItemAsync('entityToken')});
 
           this.socket.on('gottenAllCalendarItems', async(data)=>{
+            console.log("data:"+data);
 
             this.setState({items:data});
 
-            console.log(this.state.items);
 
           });
 

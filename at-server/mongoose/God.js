@@ -19,6 +19,15 @@ var mongoose = require('mongoose'),
 
      var Schema = mongoose.Schema;
 
+
+
+     var ClientStorageSchema = new Schema({
+       key:String,
+       businessName:String,
+       username:String,
+
+     });
+
      var GodSchema = new Schema({
        username:String,
        firstName: String,

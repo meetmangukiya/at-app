@@ -12,14 +12,13 @@ import GodClientSwitch from './atTeam/god/navigation/GodClientSwitch';
 import PhotographerDrawerNavigator from './atTeam/photographer/navigation/PhotographerDrawerNavigator';
 import AdDrawerNavigator from './atTeam/ad/navigation/AdDrawerNavigator';
 
-
 import AuthLoadingScreen from './authScreens/AuthLoadingScreen';
 import LoginScreen from './authScreens/LoginScreen';
 import RecoverScreen from './authScreens/RecoverScreen';
 
 import SignupScreen from './authScreens/SignupScreen';
 import PickServicesScreen from './Package/PickServicesScreen';
-
+import CustomizePackageScreen from './Package/CustomizePackageScreen';
 
 window.navigator.userAgent = "react-native";
 import io from 'socket.io-client/dist/socket.io';
@@ -37,7 +36,14 @@ const PackageStack = createStackNavigator({
     navigationOptions: {
       title: "Pick Services"
     }
+  },
+  CustomizePackage: {
+    screen: CustomizePackageScreen,
+    navigationOptions: {
+      title: "Customize Package"
+    }
   }
+
  });
 
 

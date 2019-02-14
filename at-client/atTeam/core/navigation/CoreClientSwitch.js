@@ -20,11 +20,17 @@ import MainStrategyScreen from '../screens/StrategyFolder/MainStrategyScreen';
 import MainTabNavigator from './MainTabNavigator';
 
 import ClientScreen from '../screens/ClientPick/ClientScreen';
-import ClientAssignScreen from '../screens/ClientPick/config/ClientAssignScreen';
 import ClientSettingsScreen from '../screens/ClientPick/config/ClientSettingsScreen';
-import SelectServiceScreen from '../screens/ClientPick/config/SelectServiceScreen';
-import ConfigServiceScreen from '../screens/ClientPick/config/ConfigServiceScreen';
+
+import AddServiceScreen from '../screens/ClientPick/config/AddServiceScreen';
+import RemoveServiceScreen from '../screens/ClientPick/config/RemoveServiceScreen';
+import SelectAddServiceScreen from '../screens/ClientPick/config/SelectAddServiceScreen';
+import SelectRemoveServiceScreen from '../screens/ClientPick/config/SelectRemoveServiceScreen';
+
 import BrainstormScreen from '../screens/Brainstorm/BrainstormScreen';
+
+import CoreAssignScreen from '../screens/ClientPick/config/CoreAssignScreen';
+import ContentCreatorAssignScreen from '../screens/ClientPick/config/ContentCreatorAssignScreen';
 
 
 const DrawerNavigator = createDrawerNavigator({
@@ -61,13 +67,18 @@ const DrawerNavigator = createDrawerNavigator({
 
 const ClientStack = createStackNavigator({
   'ClientMain': ClientScreen,
-  'ServiceSelectConfig': SelectServiceScreen,
-  'ServiceConfig': ConfigServiceScreen,
-  'ClientAssign':ClientAssignScreen,
+
+  'AddService':AddServiceScreen,
+  'RemoveService':RemoveServiceScreen,
+
+  'SelectAddService':SelectAddServiceScreen,
+  'SelectRemoveService':SelectRemoveServiceScreen,
+
+  'CoreAssign':CoreAssignScreen,
+  'ContentCreatorAssign':ContentCreatorAssignScreen,
   'ClientSettings':ClientSettingsScreen,
 
 });
-
 
 const GodClientSwitch= createSwitchNavigator({
   // You could add another route here for authentication.
