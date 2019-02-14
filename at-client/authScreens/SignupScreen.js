@@ -16,6 +16,8 @@ import { SecureStore } from 'expo';
 import io from 'socket.io-client/dist/socket.io';
 window.navigator.userAgent='react-native';
 
+import { getUrl } from '../utils';
+
 export default class SignupScreen extends React.Component {
 
   constructor() {
@@ -27,8 +29,8 @@ export default class SignupScreen extends React.Component {
   screenPassword:'',
   error:''};
 
-  this.socket=io.connect('http://localhost:3000/authentication', {reconnect: true});
 
+  this.socket=io.connect(getUrl('/authentication'), {reconnect: true});
 
 };
 

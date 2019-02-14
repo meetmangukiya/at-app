@@ -18,6 +18,8 @@ window.navigator.userAgent='react-native';
 
 import io from 'socket.io-client/dist/socket.io';
 
+import { getUrl } from '../../../../utils';
+
 export default class CreatePostScreen extends React.Component {
   static navigationOptions = {
     header: null,
@@ -41,7 +43,7 @@ export default class CreatePostScreen extends React.Component {
 
         };
 
-        this.socket=io.connect('http://localhost:3000/content', {reconnect: true});
+        this.socket=io.connect(getUrl('/content'), {reconnect: true});
 
       }
 
