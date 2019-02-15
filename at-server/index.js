@@ -3,8 +3,12 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var ss = require('socket.io-stream');
 var path = require('path');
+var uuid = require('uuid');
+var mongoose = require('mongoose');
 
 var fs= require('fs')
+var { Readable } = require('stream');
+
 var User = require('./mongoose/User.js')
 
 var Client= require('./mongoose/Client.js');
@@ -42,6 +46,7 @@ var InfluencerPlanModel= atObjects.InfluencerPlanModel;
 var InfluencerEventModel= atObjects.InfluencerEventModel;
 var SurveillanceModel= atObjects.SurveillanceModel;
 var AnalyticModel= atObjects.AnalyticModel;
+var getMediaModel = atObjects.getMediaModel;
 
 //testcommentchange
 
@@ -58,9 +63,17 @@ app.get('/', function(req, res){
   });});
 
 var authentication = io.of('/authentication');
+var MediaModel = null;
+mongoose.connect('mongodb://localhost/test');
+mongoose.connection.once('open', () => {
+  MediaModel = getMediaModel(mongoose.connection);
+});
 
 authentication.on('connection', function(socket){
+        console.log('connection established...', socket);
+
         socket.on('signUp', function(data){
+          console.log('signUp', JSON.stringify(data));
 
           User.findOne({ username: data.screenUserName }, function(err, user) {
           if (user!=null){
@@ -817,46 +830,103 @@ toDos.on('connection', function(socket){
 
                 var content = io.of('/content');
 
-                content.on('connection', function(socket){
+                content.on('connection', function(socket) {
+                  let id = null;
+                  let stream = null;
+                  let writePromise = null;
 
+                  socket.on('upload', (data) => {
+                    console.log('upload started');
+                    stream = createStream();
+                    const ext = data.uri.split('.').pop();
+                    const type = data.type;
 
-                  socket.on('createPost', function(data){
+                    const options = {
+                      filename: `${uuid.v4()}.${ext}`,
+                      contentType: `${type}/${ext}`,
+                    };
 
-                    ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
+                    writePromise = new Promise((resolve, reject) => {
+                      MediaModel.write(options, stream, (err, attachment) => {
+                        id = attachment._id;
+                        console.log('wrote....')
+                        console.log('error', err);
+                        console.log('attachment', attachment);
+                        resolve(id);
+                      });
+                    });
+                  });
 
+                  socket.on('chunk', (data) => {
+                    const chunk = data.chunk;
+                    console.log('got chunk', data.index, chunk);
+                    stream.push(Buffer.from(chunk, 'base64'));
+                  });
+
+                  socket.on('upload-end', (data, callback) => {
+                    console.log('upload-ended');
+                    stream.push(null);
+                    callback({ status: 'complete' });
+                  });
+
+                  socket.on('createPost', function(data) {
+                    ClientModel.findOne({ username: data.clientUsername }, async function(err, user) {
+                      console.log('creating post...')
 
                 //        user.popAndAdd(user.motherQueue,data.entity,data.msg);
 
-                        var post={base64:data.base64,tags:data.tags,caption:data.caption,hashtags:data.hashtags,
-                                location:data.location,facebook:data.facebook,instagram:data.instagram,date:data.date,
-                                time:data.time }
+                      var post = {
+                        tags: data.tags,
+                        caption: data.caption,
+                        hashtags: data.hashtags,
+                        location: data.location,
+                        facebook: data.facebook,
+                        instagram: data.instagram,
+                        date: data.date,
+                        time: data.time,
+                        file: id,
+                      };
 
+                      await writePromise;
 
-                        if(user.contentCalendar==undefined){
-                          var contentCalendar= {posts:[post]};
-                          user.contentCalendar=contentCalendar;
-                        }
+                      console.log('id', id);
+                      const readStream = MediaModel.readById(id);
+                      console.log(readStream);
+                      MediaModel.findOne({ _id: id }, (err, file) => {
+                        console.log('err', err);
+                        console.log('file', file);
+                      })
 
-                        user.contentCalendar["posts"].unshift(post);
+                      readStream.pipe(fs.createWriteStream(`read.jpg`));
 
-                        user.save();
+                      if(user.contentCalendar==undefined){
+                        var contentCalendar= {
+                          posts: [post]
+                        };
+                        user.contentCalendar = contentCalendar;
+                      }
 
-                        });
-                      });
+                      user.contentCalendar["posts"].unshift(post);
+                      user.save();
+                    });
+                  });
 
-                      socket.on('getCalendar', function(data){
+                  socket.on('getCalendar', function(data){
+                    ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
+                      console.log(user);
+                      console.log(user.contentCalendar);
 
-                        ClientModel.findOne({ username: data.clientUsername }, function(err, user) {
+                      socket.emit('gottenCalendar', user.contentCalendar["posts"]); // emit an event to the socket
+                    });
+                  });
+                });
 
-                          socket.emit('gottenCalendar', user.contentCalendar["posts"]); // emit an event to the socket
-
-
-                            });
-                          });
-
-                        });
-
-
+const createStream = () => {
+  const readable = new Readable({
+    read() {}
+  });
+  return readable;
+}
 
 
                         var activity = io.of('/activity');

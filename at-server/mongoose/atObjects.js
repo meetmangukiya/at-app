@@ -8,8 +8,9 @@ var ContentCreatorSchema= ContentCreator.ContentCreatorSchema;
 var Core= require('./Core.js');
 var CoreSchema= Core.CoreSchema;
 
+var gridfs = require('mongoose-gridfs');
 
-mongoose.connect('mongodb://localhost/test');
+
 //mongoose.connect("mongodb://armand_at:#LORDarmand2019@atsocial-shard-00-00-exfpm.gcp.mongodb.net:27017,atsocial-shard-00-01-exfpm.gcp.mongodb.net:27017,atsocial-shard-00-02-exfpm.gcp.mongodb.net:27017/test?ssl=true&replicaSet=AtSocial-shard-0&authSource=admin&retryWrites=true/", { useNewUrlParser: true });
 
 
@@ -39,32 +40,35 @@ mongoose.connect('mongodb://localhost/test');
      },
  });
 
- var PostSchema = new Schema({
-   ObjectID:String,
-   base64:String,
-   tags:String,
-   caption:String,
-   hashtags:String,
-    location:String,
-    facebook:String,
-    instagram:String,
-    date:String,
-    time:String
- });
+var PostSchema = new Schema({
+  ObjectID: String,
+  tags: String,
+  caption: String,
+  hashtags: String,
+  location: String,
+  facebook: String,
+  instagram: String,
+  date: String,
+  time: String,
+  file: {
+    type: Schema.Types.ObjectId,
+    ref: "media.files",
+  },
+});
 
 
 
  var ContentCalendarSchema = new Schema({
-   ObjectID:String,
-   clientApprovalNeeded:Boolean,
-   coreApprovalNeeded:Boolean,
-   clientApprovalGiven:Boolean,
-   coreApprovalGiven:Boolean,
-   done:Boolean,
+   ObjectID: String,
+   clientApprovalNeeded: Boolean,
+   coreApprovalNeeded: Boolean,
+   clientApprovalGiven: Boolean,
+   coreApprovalGiven: Boolean,
+   done: Boolean,
    clientApprovalDeadline: Date,
    coreApprovalDeadline: Date,
    contentDeadline: Date,
-   posts:[PostSchema],
+   posts: [PostSchema],
  });
 
 
@@ -140,36 +144,51 @@ mongoose.connect('mongodb://localhost/test');
 
 
 
- var StrategyModel = mongoose.model('Strategy', StrategySchema);
- var PostModel = mongoose.model('Post', PostSchema);
- var ContentCalendarModel = mongoose.model('ContentCalendar', ContentCalendarSchema);
- var ShootPlanModel = mongoose.model('ShootPlan', ShootPlanSchema);
- var PhotoShootModel = mongoose.model('PhotoShoot', PhotoShootSchema);
- var InfluencerPlanModel= mongoose.model('InfluencerPlan', InfluencerPlanSchema);
- var InfluencerEventModel= mongoose.model('InfluencerEvent', InfluencerEventSchema);
- var SurveillanceModel= mongoose.model('Surveillance', SurveillanceSchema);
- var AnalyticModel= mongoose.model('Analytic', AnalyticSchema);
+
+var StrategyModel = mongoose.model('Strategy', StrategySchema);
+var PostModel = mongoose.model('Post', PostSchema);
+var ContentCalendarModel = mongoose.model('ContentCalendar', ContentCalendarSchema);
+var ShootPlanModel = mongoose.model('ShootPlan', ShootPlanSchema);
+var PhotoShootModel = mongoose.model('PhotoShoot', PhotoShootSchema);
+var InfluencerPlanModel = mongoose.model('InfluencerPlan', InfluencerPlanSchema);
+var InfluencerEventModel = mongoose.model('InfluencerEvent', InfluencerEventSchema);
+var SurveillanceModel = mongoose.model('Surveillance', SurveillanceSchema);
+var AnalyticModel = mongoose.model('Analytic', AnalyticSchema);
+//
 
 
 
- module.exports = {
-     StrategySchema: StrategySchema,
-     PostSchema: PostSchema,
-     ContentCalendarSchema: ContentCalendarSchema,
-     ShootPlanSchema: ShootPlanSchema,
-     PhotoShootSchema: PhotoShootSchema,
-     InfluencerPlanSchema: InfluencerPlanSchema,
-     InfluencerEventSchema: InfluencerEventSchema,
-     SurveillanceSchema: SurveillanceSchema,
-     AnalyticSchema: AnalyticSchema,
 
-     StrategyModel: StrategyModel,
-     PostModel: PostModel,
-     ContentCalendarModel: ContentCalendarModel,
-     ShootPlanModel: ShootPlanModel,
-     PhotoShootModel: PhotoShootModel,
-     InfluencerPlanModel: InfluencerPlanModel,
-     InfluencerEventModel: InfluencerEventModel,
-     SurveillanceModel: SurveillanceModel,
-     AnalyticModel: AnalyticModel,
- };
+const getMediaModel = (mongoose) => {
+  const media = require('mongoose-gridfs')({
+    collection: 'media',
+    model: 'Media',
+    mongooseConnection: mongoose,
+  });
+
+  return mongoose.model('Media', media.schema);
+};
+
+module.exports = {
+  StrategySchema: StrategySchema,
+  PostSchema: PostSchema,
+  ContentCalendarSchema: ContentCalendarSchema,
+  ShootPlanSchema: ShootPlanSchema,
+  PhotoShootSchema: PhotoShootSchema,
+  InfluencerPlanSchema: InfluencerPlanSchema,
+  InfluencerEventSchema: InfluencerEventSchema,
+  SurveillanceSchema: SurveillanceSchema,
+  AnalyticSchema: AnalyticSchema,
+
+  StrategyModel: StrategyModel,
+  PostModel: PostModel,
+  ContentCalendarModel: ContentCalendarModel,
+  ShootPlanModel: ShootPlanModel,
+  PhotoShootModel: PhotoShootModel,
+  InfluencerPlanModel: InfluencerPlanModel,
+  InfluencerEventModel: InfluencerEventModel,
+  SurveillanceModel: SurveillanceModel,
+  AnalyticModel: AnalyticModel,
+
+  getMediaModel: getMediaModel,
+};

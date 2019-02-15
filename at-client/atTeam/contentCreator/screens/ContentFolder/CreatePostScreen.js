@@ -12,7 +12,7 @@ import {
 
 } from 'react-native';
 
-import { SecureStore,ImagePicker} from 'expo';
+import { SecureStore, ImagePicker, FileSystem } from 'expo';
 import { CheckBox } from 'react-native-elements'
 window.navigator.userAgent='react-native';
 
@@ -21,40 +21,86 @@ import io from 'socket.io-client/dist/socket.io';
 import { getUrl } from '../../../../utils';
 
 export default class CreatePostScreen extends React.Component {
+
   static navigationOptions = {
     header: null,
     drawerLabel: 'Content',
   };
 
-    constructor(){
-      super()
-      this.state = {
-  //      photo:null,
-        image: null,
-        base64:null,
-        caption:null,
-        tags:null,
-        hashtags:null,
-        location:null,
-        facebook:false,
-        instagram:false,
-        date:null,
-        time:null,
+  constructor(){
+    super()
 
-        };
+    this.state = {
+      uri: null,
+      type: null,
+      caption: null,
+      tags: null,
+      hashtags: null,
+      location: null,
+      facebook: false,
+      instagram: false,
+      date: null,
+      time: null,
+    };
 
-        this.socket=io.connect(getUrl('/content'), {reconnect: true});
+    this.socket=io.connect(getUrl('/content'), {reconnect: true});
+  }
 
+  _createPost = async() => {
+    const processChunks = async (uri, chunkSize, cb) => {
+      // since we are chunking base64
+      if (chunkSize % 3 != 0)
+        throw new Error("number of bytes should be multiple of 3")
+
+      const fileInfo = await FileSystem.getInfoAsync(uri, {
+        size: true
+      });
+
+      const fileSize = fileInfo.size; // in bytes
+      let start = 0;
+      for(let i = 0; i < Math.ceil(fileSize / chunkSize); i++) {
+        const chunk = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingTypes.Base64,
+          length: chunkSize,
+          position: start,
+        });
+
+        await cb(chunk, i);
+        start += chunkSize;
       }
+    };
 
-      _createPost=async()=>{
+    // tell the server that upload is started
+    await this.socket.emit('upload', {
+      uri: this.state.uri,
+      type: this.state.type,
+    });
 
-      await this.socket.emit('createPost', {clientUsername:await SecureStore.getItemAsync('clientSelectedUsername'),
-        entity:await SecureStore.getItemAsync('entityToken'), msg:'Create Post',base64:this.state.base64, tags:this.state.tags,caption:this.state.caption,hashtags:this.state.hashtags,
-        location:this.state.location,facebook:this.state.facebook,instagram:this.state.instagram,date:this.state.date,
-        time:this.state.time});
+    const sendChunk = async (chunk, index) => {
+      console.log('emitted', index, chunk);
+      await this.socket.emit('chunk', { chunk, index });
+    };
 
-      }
+    // chunk size is set to 255kB
+    await processChunks(this.state.uri, 255 * 1024, sendChunk);
+
+    // tell the server that the upload is complete and create the post entity
+    await this.socket.emit('upload-end', {}, async (data) => {
+      const res = await this.socket.emit('createPost', {
+          clientUsername: await SecureStore.getItemAsync('clientSelectedUsername'),
+          entity: await SecureStore.getItemAsync('entityToken'),
+          msg:'Create Post',
+          tags: this.state.tags,
+          caption: this.state.caption,
+          hashtags: this.state.hashtags,
+          location: this.state.location,
+          facebook: this.state.facebook,
+          instagram: this.state.instagram,
+          date: this.state.date,
+          time: this.state.time
+      });
+    });
+  }
 
 
       _booleanInstagram(){
@@ -138,23 +184,17 @@ export default class CreatePostScreen extends React.Component {
 
 
     _pickImage = async () => {
-
       let result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
         aspect: [4, 3],
-        base64:true,
-        exif:true,
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
       });
 
       if (!result.cancelled) {
-        console.log("uri:"+result.uri);
-    //    this.setState({ photo: result});
-
-        this.setState({ image: result.uri });
-        this.setState({ base64: result.base64 });
-        console.log("type:"+result.type);
-
-
+        console.log("uri: " + result.uri);
+        console.log("type: " + result.type);
+        this.setState({ uri: result.uri });
+        this.setState({ type: result.type });
       }
     };
   }
